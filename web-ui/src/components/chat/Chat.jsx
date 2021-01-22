@@ -107,6 +107,59 @@ class Chat extends Component {
     }
   }
 
+  handleChange = e => {
+    this.setState({ message: e.target.value })
+  }
+
+  handleKeyDown = (e) => {
+    if (e.keyCode === 13) { // keyCode 13 is carriage return
+      const { username, message, connection } = this.state;
+      if (message) {
+        const data = `{
+          "action": "sendmessage",
+          "data": "${username}::${message.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"
+        }`;
+        connection.send(data);
+
+        this.setState({ message: '' });
+        this.state.showEmojis && this.showEmojis();
+      }
+    }
+  }
+
+  parseUrls = (userInput) => {
+    var urlRegExp = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_.~#?&//=]*)/g;
+    let formattedMessage = userInput.replace(urlRegExp, (match) => {
+      let formattedMatch = match;
+      if (!match.startsWith('http')) {
+        formattedMatch = `http://${match}`;
+      }
+      return `<a href=${formattedMatch} class="chat-line__link" target="_blank" rel="noopener noreferrer">${match}</a>`;
+    });
+    return formattedMessage;
+  }
+
+  addEmoji = e => {
+    console.log(e);
+    let emoji = e.native;
+    this.setState({
+      message: this.state.message + emoji
+    });
+  };
+
+  renderMessages = () => {
+    const { messages } = this.state;
+    return (
+      messages.map(message => {
+        let formattedMessage = this.parseUrls(message.message);
+        return (
+          <div className="chat-line" key={message.timestamp}>
+            <p><span className={`username ${message.incoming}`}>{message.username}</span><span dangerouslySetInnerHTML={{__html: formattedMessage}} /></p>
+          </div>
+        )
+      })
+    )
+  }
 
   setMetadataId = (metadataId) => {
     this.setState({ metadataId });
